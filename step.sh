@@ -85,15 +85,15 @@ STATUSCODE=$(curl \
 	--header "X-API-Token: ${appcenter_api_token}" \
 	--silent --show-error \
 	--output /dev/stderr --write-out "%{http_code}" \
-	"https://api.appcenter.ms/v0.1/apps/${appcenter_org}/${appcenter_name}/release_uploads" \
+	"https://api.appcenter.ms/v0.1/apps/${appcenter_org}/${appcenter_name}/uploads/releases" \
 	2> "${TMPFILE}")
 if [ "${STATUSCODE}" -ne "201" ]
 then
 	echo_fail "API call failed with ${STATUSCODE}: $(cat ${TMPFILE})"
 fi
 
-UPLOAD_URL=$(cat "${TMPFILE}" | jq .upload_url --raw-output)
-UPLOAD_ID=$(cat "${TMPFILE}" | jq .upload_id --raw-output)
+UPLOAD_URL=$(cat "${TMPFILE}" | jq .upload_domain --raw-output)
+UPLOAD_ID=$(cat "${TMPFILE}" | jq .id --raw-output)
 
 echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
 rm "${TMPFILE}"
@@ -123,13 +123,13 @@ STATUSCODE=$(curl \
 	--silent --show-error \
 	--output /dev/stderr --write-out "%{http_code}" \
 	-d '{ "status": "committed"}' \
-	"https://api.appcenter.ms/v0.1/apps/${appcenter_org}/${appcenter_name}/release_uploads/${UPLOAD_ID}" \
+	"https://api.appcenter.ms/v0.1/apps/${appcenter_org}/${appcenter_name}/uploads/releases/${UPLOAD_ID}" \
 	2> "${TMPFILE}")
 if [ "${STATUSCODE}" -ne "200" ]
 then
 	echo_fail "API call failed with ${STATUSCODE}: $(cat ${TMPFILE})"
 fi
-RELEASE_ID=$(cat "${TMPFILE}" | jq .release_id --raw-output)
+RELEASE_ID=$(cat "${TMPFILE}" | jq .id --raw-output)
 echo_details "result is ${STATUSCODE}: $(cat ${TMPFILE})"
 rm "${TMPFILE}"
 
@@ -144,7 +144,7 @@ STATUSCODE=$(curl \
 	-H "X-API-Token: ${appcenter_api_token}" \
 	--silent --show-error \
 	--output /dev/stderr --write-out "%{http_code}" \
-	"https://api.appcenter.ms/v0.1/apps/${appcenter_org}/${appcenter_name}/distribution_groups" \
+	"https://api.appcenter.ms/v0.1/apps/distribution_groups/${appcenter_org}/${appcenter_name}" \
 	2> ${TMPFILE})
 if [ "${STATUSCODE}" -ne "200" ]
 then
