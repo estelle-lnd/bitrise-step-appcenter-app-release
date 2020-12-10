@@ -65,7 +65,6 @@ validate_required_input "appcenter_org" ${appcenter_org:-}
 validate_required_input "artifact_path" ${artifact_path:-}
 validate_required_input "distribution_groups" ${distribution_groups:-}
 
-#APPCENTER_ACCESS_TOKEN=${appcenter_api_token}
 RELEASE_NOTES_ENCODED="$( jq --null-input --compact-output --arg str "${release_notes:-}" '$str' )"
 
 if [ ! -f "${artifact_path}" ]; then
@@ -78,7 +77,20 @@ then
 	exit 0
 fi
 
+IFS=',' # space is set as delimiter
+read -ra groups <<< "$distribution_groups" # distribution_groups is read into an array as tokens separated by IFS
+GROUPS_LENGHT=${#groups[@]}
+
 npm install appcenter-cli
 appcenter login --token ${appcenter_api_token} --debug
-appcenter distribute release --app "${appcenter_org}/${appcenter_name}" --file "${artifact_path}" --group "${distribution_groups}" --release-notes "${release_notes:-}" --debug
+echo "Start release to group ${groups[0]}"
+appcenter distribute release --app "${appcenter_org}/${appcenter_name}" --file "${artifact_path}" --group ${groups[0]} --release-notes "${release_notes:-}" --debug
+
+LATEST_VERSION="$(appcenter distribute releases list --app "${appcenter_org}/${appcenter_name}" --token ${appcenter_api_token}| grep ID | head -1| tr -s ' ' | cut -f2 -d ' ')"
+echo "Latest version is $LATEST_VERSION"
+for (( i=1; i <$GROUPS_LENGHT; i++ )); do 
+    echo "Begin distribution to another group : ${groups[i]}"
+	appcenter distribute releases add-destination --app "${appcenter_org}/${appcenter_name}" -d ${groups[i]} -t group -r $LATEST_VERSION --token ${appcenter_api_token}
+done
+
 echo_done "Completed AppCenter app upload at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
